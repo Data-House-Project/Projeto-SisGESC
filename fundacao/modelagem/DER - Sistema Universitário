@@ -1,4 +1,4 @@
-https://dbdiagram.io/d/bd_sistema_universitario-69e3a9410aa78f6bc1072c50
+Link do dbdiagram.io: https://dbdiagram.io/d/bd_sistema_universitario-69e3a9410aa78f6bc1072c50
 
 enum status_academico_enum { 
   ativo 
