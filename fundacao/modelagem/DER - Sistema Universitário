@@ -1,0 +1,665 @@
+https://dbdiagram.io/d/bd_sistema_universitario-69e3a9410aa78f6bc1072c50
+
+enum status_academico_enum { 
+  ativo 
+  trancado 
+  cancelado 
+}
+enum tipo_vinculo_enum { 
+  clt 
+  pj 
+  estagiario 
+  terceirizado
+}
+enum status_atual_enum { 
+  ativo 
+  afastado 
+  encerrado 
+  ferias 
+}
+enum status_pagamento_enum { 
+  pendente 
+  pago 
+  atrasado 
+}
+enum forma_pagamento_enum { 
+  pix 
+  debito 
+  credito 
+  dinheiro 
+  boleto 
+  cheque 
+}
+enum turno_enum { 
+  manha 
+  tarde 
+  noite 
+  integral 
+}
+enum status_contrato_enum { 
+  ativo 
+  encerrado 
+  cancelado 
+}
+enum tipo_receber_enum { 
+  juros 
+  multa 
+  dp 
+  matricula 
+  rematricula 
+}
+
+// Tabelas de dados sensíveis
+Table pessoa {
+  pk_pessoa integer [primary key, increment]
+  nome varchar(150) [not null]
+  rg varchar(20) [unique, not null]
+  cpf char(14) [unique, not null]
+  data_nascimento date [not null]
+  genero varchar(20) 
+  estado_civil varchar(30) 
+  email_pessoal varchar(100) [not null]
+  titulo_eleitor char(12) [unique] 
+  telefone_pessoal varchar(15)
+  telefone_emergencia varchar(15) [not null]
+}
+
+Table endereco {
+  pk_endereco integer [primary key, increment]
+  fk_pessoa integer [ref: > pessoa.pk_pessoa, not null]
+  logradouro varchar(150) [not null]
+  bairro varchar(50) [not null]
+  cidade varchar(50) [not null]
+  uf char(2) [not null]
+  cep char(9) [not null]
+}
+
+Table dependente {
+  pk_dependente integer [primary key, increment]
+  fk_pessoa integer [ref: > pessoa.pk_pessoa, not null]
+  nome_dependente varchar(150) [not null]
+  cpf_dependente char(14) [unique]
+  grau_parentesco varchar(30) [not null]
+}
+
+Table dados_bancarios {
+  pk_banco integer [primary key, increment]
+  fk_pessoa integer [ref: > pessoa.pk_pessoa, not null]
+  codigo_banco char(3)
+  agencia varchar(10)
+  conta varchar(20)
+  tipo_conta varchar(20)
+}
+
+Table formacao_academica {
+  pk_formacao_academica integer [primary key, increment]
+  fk_pessoa integer [ref: > pessoa.pk_pessoa, not null]
+  nivel_formacao varchar(50) [not null]
+  instituicao varchar(150) [not null]
+  ano_conclusao integer [not null]
+}
+
+// Tabelas de Segurança e Auditoria de informações
+Table usuario {
+  pk_usuario integer [primary key, increment]
+  fk_pessoa integer [ref: - pessoa.pk_pessoa, not null]
+  login varchar(100) [unique, not null]
+  senha_hash varchar(255) [not null]
+  status_conta boolean [default: true]
+  ultimo_acesso timestamp
+  data_criacao timestamp [default: `now()`]
+}
+
+Table perfil {
+  pk_perfil integer [primary key, increment]
+  tipo_perfil varchar(50) [not null]
+  descricao_perfil text
+}
+
+Table usuario_perfil {
+  fk_usuario integer [ref: > usuario.pk_usuario, not null]
+  fk_perfil integer [ref: > perfil.pk_perfil, not null]
+  indexes { (fk_usuario, fk_perfil) [pk] }
+}
+
+Table log_auditoria {
+  pk_log integer [primary key, increment]
+  fk_usuario integer [ref: > usuario.pk_usuario]
+  tabela_afetada varchar(50)
+  registro_id integer
+  acao varchar(20)
+  valor_antigo text
+  valor_novo text
+  data_evento timestamp [default: `now()`]
+}
+
+// Tabelas de estrutura
+Table departamento {
+  pk_depto integer [primary key, increment]
+  nome_depto varchar(100) [not null]
+  sigla_depto char(5)
+  centro_academico varchar(100)
+}
+
+Table cargo {
+  pk_cargo integer [primary key, increment]
+  fk_depto integer [ref: > departamento.pk_depto, not null]
+  titulacao_cargo varchar(50) [not null]
+  regime_trabalho varchar(30) [not null]
+  salario_base decimal(12,2) [not null]
+}
+
+Table funcionario {
+  pk_matricula_funcional integer [primary key, increment]
+  fk_pessoa integer [ref: - pessoa.pk_pessoa, not null]
+  fk_cargo integer [ref: > cargo.pk_cargo, not null]
+  data_admissao date [not null]
+  email_institucional varchar(100) [unique, not null]
+  tipo_vinculo tipo_vinculo_enum 
+  status_atual status_atual_enum 
+}
+
+Table dados_trabalhistas {
+  pk_dados_trabalhistas integer [primary key, increment]
+  fk_matricula integer [ref: - funcionario.pk_matricula_funcional]
+  numero_ctps varchar(20) [not null]
+  serie_ctps varchar(10)
+  uf_ctps char(2)
+  pis_pasep char(11) [unique, not null]
+  categoria_esocial char(3)
+  cnh_numero varchar(15)
+  cnh_categoria char(2)
+}
+
+Table professor {
+  pk_professor integer [primary key, increment]
+  fk_pessoa integer [ref: - pessoa.pk_pessoa, not null]
+  fk_cargo integer [ref: - cargo.pk_cargo, not null]
+  fk_coordenador integer 
+  titulacao varchar(50)
+  conhecimento_profissional text
+  descricao text
+  lattes_url varchar(255)
+}
+
+Table progressao_docente {
+  pk_progressao integer [primary key, increment]
+  fk_professor integer [ref: > professor.pk_professor, not null]
+  nivel_anterior varchar(30)
+  nivel_novo varchar(30)
+  data_mudanca date [not null]
+  portaria_documento varchar(100)
+}
+
+Table avaliacao_desempenho {
+  pk_avaliacao integer [primary key, increment]
+  fk_avaliado integer [ref: > funcionario.pk_matricula_funcional]
+  fk_avaliador integer [ref: > funcionario.pk_matricula_funcional]
+  data_avaliacao date
+  nota_desempenho decimal(4,2)
+  comentarios_feedback text
+}
+
+Table ocorrencia_disciplinar {
+  pk_ocorrencia integer [primary key, increment]
+  fk_matricula integer [ref: > funcionario.pk_matricula_funcional]
+  tipo_ocorrencia varchar(50)
+  data_ocorrencia date
+  descricao_fato text
+}
+
+Table substituicao_chefia {
+  pk_substituicao integer [primary key, increment]
+  fk_titular integer [ref: > funcionario.pk_matricula_funcional]
+  fk_substituto integer [ref: > funcionario.pk_matricula_funcional]
+  data_inicio date [not null]
+  data_fim date
+  motivo_substituicao varchar(100)
+  gera_onus_financeiro boolean [default: false]
+}
+
+// Tabelas do Acadêmico
+Table curso {
+  pk_curso integer [primary key, increment]
+  fk_depto integer [ref: > departamento.pk_depto, not null]
+  nome_curso varchar(100) [not null]
+  tipo_curso varchar(50)
+  tempo_curso integer 
+  ambiente_curso varchar(20)
+}
+
+Table professor_curso {
+  fk_professor integer [ref: > professor.pk_professor, not null]
+  fk_curso integer [ref: > curso.pk_curso, not null]
+  indexes { (fk_professor, fk_curso) [pk] }
+}
+
+Table coordenador {
+  pk_coodernador integer [primary key, increment]
+  fk_curso integer [ref: > curso.pk_curso]
+  fk_professor integer [ref: > professor.pk_professor]
+  bonus integer
+  horario_atendimento datetime
+}
+
+Table aluno {
+  pk_aluno integer [primary key, increment] 
+  fk_pessoa integer [ref: - pessoa.pk_pessoa, not null]
+  fk_curso integer [ref: > curso.pk_curso, not null]
+  ra char(11) [unique, not null] 
+  data_primeiro_ingresso date [not null]
+}
+
+Table disciplina {
+  pk_disciplina integer [primary key, increment]
+  fk_curso integer [ref: > curso.pk_curso, not null]
+  fk_depto integer [ref: > departamento.pk_depto]
+  nome_disciplina varchar(100) [not null]
+  carga_horaria_semestral integer [not null] 
+}
+
+Table turma {
+  pk_turma integer [primary key, increment]
+  fk_disciplina integer [ref: > disciplina.pk_disciplina]
+  fk_professor integer [ref: > professor.pk_professor]
+  fk_coordenador integer [ref: > coordenador.pk_coodernador]
+  periodo_letivo varchar(10) [not null] 
+  turno varchar(20)
+}
+
+Table matricula_curso { 
+  pk_matricula_curso integer [primary key, increment]
+  fk_aluno integer [ref: > aluno.pk_aluno, not null]
+  fk_curso integer [ref: > curso.pk_curso, not null]
+  data_ingresso date [not null]
+  status_academico varchar(30) [default: "Ativo"]
+  notas_global decimal(4,2) [default: 0]
+  faltas_total integer [default: 0]
+}
+
+Table matricula_turma { 
+  pk_matricula_turma integer [primary key, increment]
+  fk_aluno integer [ref: > aluno.pk_aluno, not null]
+  fk_turma integer [ref: > turma.pk_turma, not null]
+  data_matricula date
+}
+
+Table motivo_reprovacao {
+  pk_motivo integer [pk, increment]
+  descricao varchar(100) [not null]
+}
+
+Table desempenho {
+  pk_desempenho integer [pk, increment]
+  fk_matricula_turma integer [ref: - matricula_turma.pk_matricula_turma, not null]
+  nota_p1 decimal (4,2) [default: 0]
+  nota_p2 decimal (4,2) [default: 0]
+  fk_motivo_reprovacao integer [ref: > motivo_reprovacao.pk_motivo]
+  feedback_melhoria text
+  pontos_fortes text
+}
+
+// Tabelas de eventos da universidade, pesquisas e extensões
+Table evento_calendario {
+  pk_evento integer [primary key, increment]
+  nome_evento varchar(100)
+  data_evento date [not null]
+  tipo_evento varchar(30)
+  fk_unidade_afetada integer [ref: > departamento.pk_depto]
+}
+
+Table projeto_academico {
+  pk_projeto integer [primary key, increment]
+  titulo_projeto varchar(255) [not null]
+  tipo_projeto varchar(50)
+  data_inicio date
+  data_fim date
+  valor_financiamento decimal(15,2)
+}
+
+Table bolsa_estudo {
+  pk_bolsa integer [primary key, increment]
+  fk_pessoa integer [ref: > pessoa.pk_pessoa]
+  fk_projeto integer [ref: > projeto_academico.pk_projeto]
+  tipo_bolsa varchar(50)
+  valor_mensal decimal(10,2) [not null]
+  data_vigencia_inicio date
+  data_vigencia_fim date
+}
+
+Table producao_cientifica {
+  pk_producao integer [primary key, increment]
+  titulo_producao varchar(255) [not null]
+  tipo_producao varchar(50)
+  ano_publicacao integer
+  issn_isbn varchar(20)
+  doi_link varchar(255)
+}
+
+Table autor_producao {
+  fk_producao integer [ref: > producao_cientifica.pk_producao]
+  fk_pessoa integer [ref: > pessoa.pk_pessoa]
+  eh_autor_principal boolean [default: false]
+  indexes { (fk_producao, fk_pessoa) [pk] }
+}
+
+// Tabelas de financeiros e contratos da universidade
+Table pessoa_juridica {
+  pk_juridica integer [primary key, increment]
+  nome_fantasia varchar(100) [not null]
+  cnpj varchar(15) [not null, unique]
+  telefone_juridica varchar(15) [not null]
+  email_juridica varchar(100) [not null]
+}
+
+Table contratos_educacionais {
+  pk_contrato integer [primary key, increment]
+  fk_matricula_curso integer [ref: > matricula_curso.pk_matricula_curso, not null]
+  porcentagem_desconto decimal(5,2) [not null]
+  valor_total_mensalidade decimal(10,2) [not null]
+  data_inicio date
+  data_fim date
+  status_contrato status_contrato_enum [default: 'ativo', not null]
+}
+
+Table mensalidade {
+  pk_mensalidade integer [primary key, increment]
+  fk_contrato integer [ref: > contratos_educacionais.pk_contrato, not null]
+  parcela integer [not null]
+  valor_parcela decimal(10,2) [not null]
+  data_limite date [not null]
+  status_mensalidade status_pagamento_enum [default: 'pendente', not null]
+}
+
+Table inadimplencia {
+  pk_atraso integer [primary key, increment]
+  fk_mensalidade integer [ref: > mensalidade.pk_mensalidade, not null]
+  data_atraso date
+  juros decimal(10,2) [default: 0, not null]
+  multa decimal(10,2) [default: 0, not null]
+}
+
+// Tabelas de contas da nossa universidade
+Table contas_receber {
+  pk_receber integer [primary key, increment]
+  fk_pessoa integer [ref:> pessoa.pk_pessoa, not null]
+  valor_receber decimal(10,2) [not null]
+  tipo_receber tipo_receber_enum [default:'matricula', not null]
+  vencimento_receber date [not null]
+  status_receber status_pagamento_enum [default: 'pendente', not null]
+}
+
+Table contas_receber_mensalidade {
+  fk_receber integer [ref:> contas_receber.pk_receber, not null]
+  fk_mensalidade integer [ref:> mensalidade.pk_mensalidade, not null]
+  indexes { (fk_receber, fk_mensalidade) [pk] }
+}
+
+Table pagamento_recebido {
+  pk_pagamento_recebido integer [primary key, increment]
+  fk_receber integer [ref: > contas_receber.pk_receber, not null]
+  valor_pago decimal(10,2) [not null]
+  forma_pagamento_recebido forma_pagamento_enum [default: 'credito', not null]
+  data_pagamento_recebido timestamp [default: `now()`]
+}
+
+Table fornecedor {
+  pk_fornecedor integer [primary key, increment]
+  fk_juridica integer [ref: > pessoa_juridica.pk_juridica, not null, unique]
+}
+
+Table contas_pagar {
+  pk_pagar integer [primary key, increment]
+  fk_matricula integer [ref:> funcionario.pk_matricula_funcional]
+  fk_fornecedor integer [ref:> fornecedor.pk_fornecedor]
+  status_pagar status_pagamento_enum [default: 'pendente', not null]
+  valor_pagar_total decimal(10,2) [not null]
+  descricao varchar(60)
+  data_limite date [not null]
+}
+
+Table pagamento {
+  pk_pagamento integer [primary key, increment]
+  fk_pagar integer [ref:> contas_pagar.pk_pagar, not null]
+  forma_pagamento forma_pagamento_enum [default: 'credito', not null]
+  valor_pago decimal(10,2) [not null]
+  data_pagamento timestamp [default: `now()`]
+  status_pagamento status_pagamento_enum [default: 'pago', not null]
+}
+
+// Tabelas de pagamento e benefícios
+Table folha_pagamento {
+  pk_folha_pagamento integer [primary key, increment]
+  fk_matricula integer [ref: > funcionario.pk_matricula_funcional, not null]
+  mes_referencia integer [not null]
+  ano_referencia integer [not null]
+  data_emissao timestamp [default: `now()`]
+  valor_liquido decimal(12,2) [not null]
+}
+
+Table rubrica {
+  pk_rubrica integer [primary key, increment]
+  nome_rubrica varchar(100) [not null]
+  tipo_rubrica char(1)
+}
+
+Table item_folha {
+  pk_item_folha integer [primary key, increment]
+  fk_folha_pagamento integer [ref: > folha_pagamento.pk_folha_pagamento, not null]
+  fk_rubrica integer [ref: > rubrica.pk_rubrica, not null]
+  valor decimal(12,2) [not null]
+}
+
+Table beneficio {
+  pk_beneficio integer [primary key, increment]
+  nome_beneficio varchar(100) [not null]
+  provedor varchar(100)
+  valor_padrao decimal(12,2)
+}
+
+Table vinculo_beneficio {
+  fk_matricula integer [ref: > funcionario.pk_matricula_funcional, not null]
+  fk_beneficio integer [ref: > beneficio.pk_beneficio, not null]
+  data_adesao date [not null]
+  valor_desconto_colaborador decimal(12,2)
+  indexes { (fk_matricula, fk_beneficio) [pk] }
+}
+
+Table sindicato {
+  pk_sindicato integer [primary key, increment]
+  nome_sindicato varchar(150)
+  cnpj char(18) [unique]
+  percentual_contribuicao decimal(5,2)
+}
+
+Table vinculo_sindicato {
+  fk_matricula integer [ref: > funcionario.pk_matricula_funcional]
+  fk_sindicato integer [ref: > sindicato.pk_sindicato]
+  data_filiacao date
+  indexes { (fk_matricula, fk_sindicato) [pk] }
+}
+
+// Tabelas de controles de ponto, banco de horas e gestão do rh
+Table registro_ponto {
+  pk_ponto integer [primary key, increment]
+  fk_matricula integer [ref: > funcionario.pk_matricula_funcional, not null]
+  data_registro date [not null]
+  hora_entrada time [not null]
+  hora_saida time
+  justificativa text
+}
+
+Table banco_horas {
+  pk_banco_horas integer [primary key, increment]
+  fk_matricula integer [ref: > funcionario.pk_matricula_funcional]
+  mes_referencia integer
+  ano_referencia integer
+  saldo_horas_minutos integer
+  horas_compensadas integer
+}
+
+Table exame_medico {
+  pk_exame integer [primary key, increment]
+  fk_matricula integer [ref: > funcionario.pk_matricula_funcional, not null]
+  tipo_exame varchar(50)
+  data_exame date [not null]
+  resultado varchar(30) [not null]
+  crm_medico varchar(20)
+}
+
+Table afastamento {
+  pk_afastamento integer [primary key, increment]
+  fk_matricula integer [ref: > funcionario.pk_matricula_funcional, not null]
+  tipo_afastamento varchar(50) [not null]
+  data_inicio date [not null]
+  data_fim date
+  cid_codigo varchar(10)
+}
+
+Table controle_ferias {
+  pk_ferias integer [primary key, increment]
+  fk_matricula integer [ref: > funcionario.pk_matricula_funcional]
+  inicio_periodo_aquisitivo date [not null]
+  fim_periodo_aquisitivo date [not null]
+  limite_concessivo date [not null]
+  dias_direitos integer [default: 30]
+  saldo_dias integer
+}
+
+// Tabelas de infraestrutura e ativos da universidade
+Table ativo_equipamento {
+  pk_ativo integer [primary key, increment]
+  fk_matricula integer [ref: > funcionario.pk_matricula_funcional, not null]
+  tipo_equipamento varchar(50)
+  modelo varchar(100)
+  numero_serie varchar(100) [unique, not null]
+  data_entrega date [not null]
+  data_devolucao date
+}
+
+Table espaco_fisico {
+  pk_espaco integer [primary key, increment]
+  nome_espaco varchar(100) [not null]
+  bloco char(5) [not null]
+  andar integer
+  capacidade_pessoas integer
+  tipo_uso varchar(50)
+}
+
+Table alocacao_ativo_local {
+  fk_ativo integer [ref: > ativo_equipamento.pk_ativo]
+  fk_espaco integer [ref: > espaco_fisico.pk_espaco]
+  data_instalacao date [default: `now()`]
+  indexes { (fk_ativo, fk_espaco) [pk] }
+}
+
+Table parceiro_comercial {
+  pk_parceiro integer [primary key, increment]
+  nome_fantasia varchar(150) [not null]
+  cnpj char(18) [unique, not null]
+  tipo_servico varchar(50)
+  telefone_contato varchar(15)
+}
+
+Table contrato_espaco {
+  pk_contrato integer [primary key, increment]
+  fk_parceiro integer [ref: > parceiro_comercial.pk_parceiro]
+  fk_espaco integer [ref: > espaco_fisico.pk_espaco]
+  valor_aluguel_mensal decimal(12,2)
+  data_inicio date [not null]
+  data_fim date
+  status_contrato varchar(20)
+}
+
+Table empresa_terceirizada {
+  pk_empresa integer [primary key, increment]
+  nome_fantasia varchar(150)
+  cnpj char(18) [unique]
+  contato_gestor varchar(100)
+}
+
+Table colaborador_terceirizado {
+  pk_terceirizado integer [primary key, increment]
+  fk_pessoa integer [ref: > pessoa.pk_pessoa]
+  fk_empresa integer [ref: > empresa_terceirizada.pk_empresa]
+  funcao_exercida varchar(100)
+  data_inicio_prestacao date
+  cartao_acesso_id varchar(50)
+}
+
+Table veiculo_estacionamento {
+  pk_veiculo integer [primary key, increment]
+  fk_pessoa integer [ref: > pessoa.pk_pessoa]
+  placa char(7) [unique, not null]
+  modelo varchar(50)
+  cor varchar(20)
+  selo_estacionamento varchar(50) [unique]
+}
+
+// Tabelas de recrutamento, intercâmbio e terceiros
+Table processo_seletivo {
+  pk_processo integer [primary key, increment]
+  titulo_vaga varchar(150) [not null]
+  tipo_vaga varchar(50)
+  data_abertura date [not null]
+  data_fechamento date
+  status_processo varchar(20)
+}
+
+Table candidato {
+  pk_candidato integer [primary key, increment]
+  fk_pessoa integer [ref: > pessoa.pk_pessoa]
+  fk_processo integer [ref: > processo_seletivo.pk_processo]
+  curriculo_url varchar(255)
+  resultado_final varchar(30)
+}
+
+Table entrevista_desligamento {
+  pk_desligamento integer [primary key, increment]
+  fk_matricula integer [ref: > funcionario.pk_matricula_funcional]
+  data_desligamento date [not null]
+  motivo_saida varchar(100)
+  entrevista_feedback text
+  devolveu_ativos boolean [default: false]
+}
+
+Table documento_digital {
+  pk_documento integer [primary key, increment]
+  fk_pessoa integer [ref: > pessoa.pk_pessoa]
+  tipo_documento varchar(50)
+  url_arquivo varchar(255) [not null]
+  data_upload timestamp [default: `now()`]
+}
+
+Table intercambio_internacional {
+  pk_intercambio integer [primary key, increment]
+  fk_pessoa integer [ref: > pessoa.pk_pessoa]
+  pais_destino char(2)
+  instituicao_destino varchar(150)
+  data_partida date
+  data_retorno date
+  ajuda_custo_total decimal(12,2)
+}
+
+Table premiacao_honraria {
+  pk_premio integer [primary key, increment]
+  fk_pessoa integer [ref: > pessoa.pk_pessoa]
+  nome_premio varchar(150) [not null]
+  data_concessao date
+  descricao_conquista text
+}
+
+Table conselho_colegiado {
+  pk_conselho integer [primary key, increment]
+  nome_conselho varchar(100) [not null]
+  fk_depto_gestor integer [ref: > departamento.pk_depto]
+}
+
+Table membro_conselho {
+  pk_membro integer [primary key, increment]
+  fk_pessoa integer [ref: > pessoa.pk_pessoa]
+  fk_conselho integer [ref: > conselho_colegiado.pk_conselho]
+  cargo_conselho varchar(50)
+  data_inicio_mandato date
+  data_fim_mandato date
+}
