@@ -29,6 +29,6 @@ obj/
 *.bak
 *.log
 
-# Local environment files
-/.env
-/.venv
+# Local configuration files
+.venv
+.env
