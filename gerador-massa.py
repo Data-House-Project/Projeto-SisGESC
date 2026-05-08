@@ -22,7 +22,7 @@ def gerar_massa():
     try:
         conn = mysql.connector.connect(**config)
         cursor = conn.cursor()
-        print("🔌 Conectado ao Aiven. Verificando idempotência...")
+        print("  Conectado ao Aiven. Verificando idempotência...")
 
         cursor.execute("SELECT COUNT(*) FROM pessoa")
         qtd_pessoas = cursor.fetchone()[0]
@@ -31,7 +31,7 @@ def gerar_massa():
             print(" O banco já possui dados gerados! Abortando para evitar duplicidade (-20 pontos).")
             return
 
-        print("🚀 Iniciando geração de massa de dados completa...")
+        print(" Iniciando geração de massa de dados completa...")
 
         # NACIONALIDADES E DEPARTAMENTOS
         cursor.execute("INSERT INTO nacionalidade (pais, gentilico) VALUES ('Brasil', 'Brasileiro')")
@@ -121,9 +121,9 @@ def gerar_massa():
         print(" Massa de dados inserida com sucesso no Aiven, todas as queries agora retornarão dados.")
 
     except mysql.connector.Error as db_err:
-        print(f"❌ Erro de conexão ao banco de dados: {db_err}")
+        print(f" Erro de conexão ao banco de dados: {db_err}")
     except Exception as e:
-        print(f"❌ Erro: {e}")
+        print(f" Erro: {e}")
     finally:
         if conn and conn.is_connected():
             cursor.close()
