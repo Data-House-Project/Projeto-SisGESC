@@ -23,6 +23,13 @@ def gerar_massa():
         cursor = conn.cursor()
         print("Conectado ao Aiven. Iniciando geração...")
 
+        cursor.execute("SELECT COUNT(*) FROM pessoa")
+        qtd_pessoas = cursor.fetchone()[0]
+
+        if qtd_pessoas > 0:
+        print("⚠️ O banco já possui dados! O script é IDEMPOTENTE e não fará duplicações.")
+        return
+
         nacionalidades = [('Brasil', 'Brasileiro'), ('Portugal', 'Português')]
         for pais, gentilico in nacionalidades:
             cursor.execute("INSERT INTO nacionalidade (pais, gentilico) VALUES (%s, %s)", (pais, gentilico))
