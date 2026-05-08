@@ -27,7 +27,7 @@ def gerar_massa():
         qtd_pessoas = cursor.fetchone()[0]
 
         if qtd_pessoas > 0:
-        print("⚠️ O banco já possui dados! O script é IDEMPOTENTE e não fará duplicações.")
+        print(" O banco já possui dados! O script é IDEMPOTENTE e não fará duplicações.")
         return
 
         nacionalidades = [('Brasil', 'Brasileiro'), ('Portugal', 'Português')]
