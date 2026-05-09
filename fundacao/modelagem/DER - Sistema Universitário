@@ -1,4 +1,4 @@
-Link do dbdiagram.io: https://dbdiagram.io/d/bd_sistema_universitario-69e3a9410aa78f6bc1072c50
+Link do dbdiagram: https://dbdiagram.io/d/bd_sistema_universitario-69e3a9410aa78f6bc1072c50
 
 enum status_academico_enum { 
   ativo 
@@ -49,19 +49,27 @@ enum tipo_receber_enum {
   rematricula 
 }
 
-// Tabelas de dados sensíveis
 Table pessoa {
   pk_pessoa integer [primary key, increment]
-  nome varchar(150) [not null]
+  nome varchar(100) [not null]
+  sobrenome varchar(100) [not null] 
   rg varchar(20) [unique, not null]
   cpf char(14) [unique, not null]
   data_nascimento date [not null]
-  genero varchar(20) 
-  estado_civil varchar(30) 
+  genero varchar(20)
+  estado_civil varchar(30)
+  fk_nacionalidade integer [ref: > nacionalidade.pk_nacionalidade, not null]
   email_pessoal varchar(100) [not null]
-  titulo_eleitor char(12) [unique] 
+  titulo_eleitor char(12) [unique]
   telefone_pessoal varchar(15)
   telefone_emergencia varchar(15) [not null]
+  religiao varchar(50)
+}
+
+Table nacionalidade {
+  pk_nacionalidade integer [primary key, increment]
+  pais varchar(100) [not null]
+  gentilico varchar(50)
 }
 
 Table endereco {
@@ -99,7 +107,6 @@ Table formacao_academica {
   ano_conclusao integer [not null]
 }
 
-// Tabelas de Segurança e Auditoria de informações
 Table usuario {
   pk_usuario integer [primary key, increment]
   fk_pessoa integer [ref: - pessoa.pk_pessoa, not null]
@@ -133,7 +140,6 @@ Table log_auditoria {
   data_evento timestamp [default: `now()`]
 }
 
-// Tabelas de estrutura
 Table departamento {
   pk_depto integer [primary key, increment]
   nome_depto varchar(100) [not null]
@@ -155,8 +161,8 @@ Table funcionario {
   fk_cargo integer [ref: > cargo.pk_cargo, not null]
   data_admissao date [not null]
   email_institucional varchar(100) [unique, not null]
-  tipo_vinculo tipo_vinculo_enum 
-  status_atual status_atual_enum 
+  tipo_vinculo tipo_vinculo_enum
+  status_atual status_atual_enum
 }
 
 Table dados_trabalhistas {
@@ -170,6 +176,7 @@ Table dados_trabalhistas {
   cnh_numero varchar(15)
   cnh_categoria char(2)
 }
+
 
 Table professor {
   pk_professor integer [primary key, increment]
@@ -218,7 +225,6 @@ Table substituicao_chefia {
   gera_onus_financeiro boolean [default: false]
 }
 
-// Tabelas do Acadêmico
 Table curso {
   pk_curso integer [primary key, increment]
   fk_depto integer [ref: > departamento.pk_depto, not null]
@@ -243,10 +249,9 @@ Table coordenador {
 }
 
 Table aluno {
-  pk_aluno integer [primary key, increment] 
+  pk_aluno integer [primary key, increment]
   fk_pessoa integer [ref: - pessoa.pk_pessoa, not null]
-  fk_curso integer [ref: > curso.pk_curso, not null]
-  ra char(11) [unique, not null] 
+  ra char(11) [unique, not null]
   data_primeiro_ingresso date [not null]
 }
 
@@ -267,12 +272,12 @@ Table turma {
   turno varchar(20)
 }
 
-Table matricula_curso { 
-  pk_matricula_curso integer [primary key, increment]
+Table matricula_curso {
+  pk_matricula_curso integer [primary key, increment] 
   fk_aluno integer [ref: > aluno.pk_aluno, not null]
   fk_curso integer [ref: > curso.pk_curso, not null]
   data_ingresso date [not null]
-  status_academico varchar(30) [default: "Ativo"]
+  status_academico status_academico_enum [default: 'ativo']
   notas_global decimal(4,2) [default: 0]
   faltas_total integer [default: 0]
 }
@@ -290,16 +295,13 @@ Table motivo_reprovacao {
 }
 
 Table desempenho {
-  pk_desempenho integer [pk, increment]
+  pk_desempenho integer [primary key, increment]
   fk_matricula_turma integer [ref: - matricula_turma.pk_matricula_turma, not null]
-  nota_p1 decimal (4,2) [default: 0]
-  nota_p2 decimal (4,2) [default: 0]
+  nota_p1 decimal(4,2) [default: 0]
+  nota_p2 decimal(4,2) [default: 0]
   fk_motivo_reprovacao integer [ref: > motivo_reprovacao.pk_motivo]
-  feedback_melhoria text
-  pontos_fortes text
 }
 
-// Tabelas de eventos da universidade, pesquisas e extensões
 Table evento_calendario {
   pk_evento integer [primary key, increment]
   nome_evento varchar(100)
@@ -343,7 +345,6 @@ Table autor_producao {
   indexes { (fk_producao, fk_pessoa) [pk] }
 }
 
-// Tabelas de financeiros e contratos da universidade
 Table pessoa_juridica {
   pk_juridica integer [primary key, increment]
   nome_fantasia varchar(100) [not null]
@@ -357,9 +358,9 @@ Table contratos_educacionais {
   fk_matricula_curso integer [ref: > matricula_curso.pk_matricula_curso, not null]
   porcentagem_desconto decimal(5,2) [not null]
   valor_total_mensalidade decimal(10,2) [not null]
-  data_inicio date
-  data_fim date
-  status_contrato status_contrato_enum [default: 'ativo', not null]
+  data_inicio date [not null] 
+  data_fim date [not null]    
+  status_contrato status_contrato_enum [default: 'ativo']
 }
 
 Table mensalidade {
@@ -374,12 +375,12 @@ Table mensalidade {
 Table inadimplencia {
   pk_atraso integer [primary key, increment]
   fk_mensalidade integer [ref: > mensalidade.pk_mensalidade, not null]
-  data_atraso date
+  data_atraso date [not null]
   juros decimal(10,2) [default: 0, not null]
   multa decimal(10,2) [default: 0, not null]
+  data_ultima_atualizacao timestamp [default: `now()`]
 }
 
-// Tabelas de contas da nossa universidade
 Table contas_receber {
   pk_receber integer [primary key, increment]
   fk_pessoa integer [ref:> pessoa.pk_pessoa, not null]
@@ -427,7 +428,6 @@ Table pagamento {
   status_pagamento status_pagamento_enum [default: 'pago', not null]
 }
 
-// Tabelas de pagamento e benefícios
 Table folha_pagamento {
   pk_folha_pagamento integer [primary key, increment]
   fk_matricula integer [ref: > funcionario.pk_matricula_funcional, not null]
@@ -479,7 +479,6 @@ Table vinculo_sindicato {
   indexes { (fk_matricula, fk_sindicato) [pk] }
 }
 
-// Tabelas de controles de ponto, banco de horas e gestão do rh
 Table registro_ponto {
   pk_ponto integer [primary key, increment]
   fk_matricula integer [ref: > funcionario.pk_matricula_funcional, not null]
@@ -526,7 +525,6 @@ Table controle_ferias {
   saldo_dias integer
 }
 
-// Tabelas de infraestrutura e ativos da universidade
 Table ativo_equipamento {
   pk_ativo integer [primary key, increment]
   fk_matricula integer [ref: > funcionario.pk_matricula_funcional, not null]
@@ -596,7 +594,6 @@ Table veiculo_estacionamento {
   selo_estacionamento varchar(50) [unique]
 }
 
-// Tabelas de recrutamento, intercâmbio e terceiros
 Table processo_seletivo {
   pk_processo integer [primary key, increment]
   titulo_vaga varchar(150) [not null]
