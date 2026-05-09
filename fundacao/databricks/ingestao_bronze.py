@@ -6,7 +6,7 @@ import pandas as pd
 config = {
     'host': 'mysql-16bf5bed-sisgesc-universitario-1b04.l.aivencloud.com', 
     'user': 'avnadmin',
-    'password': '', //retirei por segurança.
+    'password': '', #retirei por segurança.
     'port': 25090,
     'database': 'sisgesc_universitario'
 }
