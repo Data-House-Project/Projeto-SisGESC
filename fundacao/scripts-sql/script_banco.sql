@@ -1,17 +1,27 @@
-CREATE DATABASE sisgesc_universitario;
-use sisgesc_universitario;
+CREATE DATABASE sisgesc_universitario; 
+use sisgesc_universitario; 
+
 CREATE TABLE `pessoa` (
   `pk_pessoa` integer PRIMARY KEY AUTO_INCREMENT,
-  `nome` varchar(150) NOT NULL,
+  `nome` varchar(100) NOT NULL,
+  `sobrenome` varchar(100) NOT NULL,
   `rg` varchar(20) UNIQUE NOT NULL,
   `cpf` char(14) UNIQUE NOT NULL,
   `data_nascimento` date NOT NULL,
   `genero` varchar(20),
   `estado_civil` varchar(30),
+  `fk_nacionalidade` integer NOT NULL,
   `email_pessoal` varchar(100) NOT NULL,
   `titulo_eleitor` char(12) UNIQUE,
   `telefone_pessoal` varchar(15),
-  `telefone_emergencia` varchar(15) NOT NULL
+  `telefone_emergencia` varchar(15) NOT NULL,
+  `religiao` varchar(50)
+);
+
+CREATE TABLE `nacionalidade` (
+  `pk_nacionalidade` integer PRIMARY KEY AUTO_INCREMENT,
+  `pais` varchar(100) NOT NULL,
+  `gentilico` varchar(50)
 );
 
 CREATE TABLE `endereco` (
@@ -192,7 +202,6 @@ CREATE TABLE `coordenador` (
 CREATE TABLE `aluno` (
   `pk_aluno` integer PRIMARY KEY AUTO_INCREMENT,
   `fk_pessoa` integer NOT NULL,
-  `fk_curso` integer NOT NULL,
   `ra` char(11) UNIQUE NOT NULL,
   `data_primeiro_ingresso` date NOT NULL
 );
@@ -219,7 +228,7 @@ CREATE TABLE `matricula_curso` (
   `fk_aluno` integer NOT NULL,
   `fk_curso` integer NOT NULL,
   `data_ingresso` date NOT NULL,
-  `status_academico` varchar(30) DEFAULT 'Ativo',
+  `status_academico` ENUM ('ativo', 'trancado', 'cancelado') DEFAULT 'ativo',
   `notas_global` decimal(4,2) DEFAULT 0,
   `faltas_total` integer DEFAULT 0
 );
@@ -241,9 +250,7 @@ CREATE TABLE `desempenho` (
   `fk_matricula_turma` integer NOT NULL,
   `nota_p1` decimal(4,2) DEFAULT 0,
   `nota_p2` decimal(4,2) DEFAULT 0,
-  `fk_motivo_reprovacao` integer,
-  `feedback_melhoria` text,
-  `pontos_fortes` text
+  `fk_motivo_reprovacao` integer
 );
 
 CREATE TABLE `evento_calendario` (
@@ -302,9 +309,9 @@ CREATE TABLE `contratos_educacionais` (
   `fk_matricula_curso` integer NOT NULL,
   `porcentagem_desconto` decimal(5,2) NOT NULL,
   `valor_total_mensalidade` decimal(10,2) NOT NULL,
-  `data_inicio` date,
-  `data_fim` date,
-  `status_contrato` ENUM ('ativo', 'encerrado', 'cancelado') NOT NULL DEFAULT 'ativo'
+  `data_inicio` date NOT NULL,
+  `data_fim` date NOT NULL,
+  `status_contrato` ENUM ('ativo', 'encerrado', 'cancelado') DEFAULT 'ativo'
 );
 
 CREATE TABLE `mensalidade` (
@@ -319,9 +326,10 @@ CREATE TABLE `mensalidade` (
 CREATE TABLE `inadimplencia` (
   `pk_atraso` integer PRIMARY KEY AUTO_INCREMENT,
   `fk_mensalidade` integer NOT NULL,
-  `data_atraso` date,
+  `data_atraso` date NOT NULL,
   `juros` decimal(10,2) NOT NULL DEFAULT 0,
-  `multa` decimal(10,2) NOT NULL DEFAULT 0
+  `multa` decimal(10,2) NOT NULL DEFAULT 0,
+  `data_ultima_atualizacao` timestamp DEFAULT (now())
 );
 
 CREATE TABLE `contas_receber` (
@@ -604,6 +612,8 @@ CREATE TABLE `membro_conselho` (
   `data_fim_mandato` date
 );
 
+ALTER TABLE `pessoa` ADD FOREIGN KEY (`fk_nacionalidade`) REFERENCES `nacionalidade` (`pk_nacionalidade`);
+
 ALTER TABLE `endereco` ADD FOREIGN KEY (`fk_pessoa`) REFERENCES `pessoa` (`pk_pessoa`);
 
 ALTER TABLE `dependente` ADD FOREIGN KEY (`fk_pessoa`) REFERENCES `pessoa` (`pk_pessoa`);
@@ -655,8 +665,6 @@ ALTER TABLE `coordenador` ADD FOREIGN KEY (`fk_curso`) REFERENCES `curso` (`pk_c
 ALTER TABLE `coordenador` ADD FOREIGN KEY (`fk_professor`) REFERENCES `professor` (`pk_professor`);
 
 ALTER TABLE `aluno` ADD FOREIGN KEY (`fk_pessoa`) REFERENCES `pessoa` (`pk_pessoa`);
-
-ALTER TABLE `aluno` ADD FOREIGN KEY (`fk_curso`) REFERENCES `curso` (`pk_curso`);
 
 ALTER TABLE `disciplina` ADD FOREIGN KEY (`fk_curso`) REFERENCES `curso` (`pk_curso`);
 
