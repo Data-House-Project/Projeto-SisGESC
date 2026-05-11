@@ -1,6 +1,12 @@
 CREATE DATABASE sisgesc_universitario; 
 use sisgesc_universitario; 
 
+CREATE TABLE `nacionalidade` (
+  `pk_nacionalidade` integer PRIMARY KEY AUTO_INCREMENT,
+  `pais` varchar(100) NOT NULL,
+  `gentilico` varchar(50)
+);
+
 CREATE TABLE `pessoa` (
   `pk_pessoa` integer PRIMARY KEY AUTO_INCREMENT,
   `nome` varchar(100) NOT NULL,
@@ -16,12 +22,6 @@ CREATE TABLE `pessoa` (
   `telefone_pessoal` varchar(15),
   `telefone_emergencia` varchar(15) NOT NULL,
   `religiao` varchar(50)
-);
-
-CREATE TABLE `nacionalidade` (
-  `pk_nacionalidade` integer PRIMARY KEY AUTO_INCREMENT,
-  `pais` varchar(100) NOT NULL,
-  `gentilico` varchar(50)
 );
 
 CREATE TABLE `endereco` (
@@ -777,3 +777,5 @@ ALTER TABLE `conselho_colegiado` ADD FOREIGN KEY (`fk_depto_gestor`) REFERENCES 
 ALTER TABLE `membro_conselho` ADD FOREIGN KEY (`fk_pessoa`) REFERENCES `pessoa` (`pk_pessoa`);
 
 ALTER TABLE `membro_conselho` ADD FOREIGN KEY (`fk_conselho`) REFERENCES `conselho_colegiado` (`pk_conselho`);
+
+ALTER TABLE `departamento` ADD CONSTRAINT uc_sigla_depto UNIQUE (sigla_depto);
