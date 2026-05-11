@@ -1,47 +1,54 @@
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.classification import RandomForestClassifier
-from pyspark.sql.functions import col, when
+from pyspark.sql.functions import col, when, udf
+from pyspark.sql.types import FloatType
 
-spark.sql("USE CATALOG workspace")
-spark.sql("USE SCHEMA delta")
+# Configuração de Caminho e Contexto
+CATALOGO = "workspace"
+ESQUEMA = "delta"
 
-# Preparando o Alvo (Label)
-# Vamos considerar Risco (1) se o aluno tiver média < 6 ou mais de 2 meses inadimplente
-df_ia = spark.table("gold_fato_evasao").withColumn(
-    "label", 
-    when((col("notas_global") < 6.0) | (col("meses_inadimplente") > 1), 1).otherwise(0)
+spark.sql(f"USE CATALOG {CATALOGO}")
+spark.sql(f"USE SCHEMA {ESQUEMA}")
+
+print(" Iniciando Treinamento da IA Preditiva...")
+
+# Leitura da Tabela Gold (Base de Conhecimento)
+df_gold = spark.table(f"{CATALOGO}.{ESQUEMA}.gold_fato_evasao")
+
+# Definição do Alvo (Label)
+# Classifica como Risco (1) se a nota for baixa ou houver inadimplência
+df_ia = df_gold.withColumn("label", 
+    when((col("notas_global") < 6.5) | (col("meses_inadimplente") > 0), 1).otherwise(0)
 )
 
-# Seleção de Características (Features)
-# A IA vai aprender com base em: Notas, Faltas e Inadimplência
+# Vetorização das Características (Features)
+# A IA analisa Notas, Faltas e Inadimplência para aprender o padrão
 assembler = VectorAssembler(
     inputCols=["notas_global", "faltas_total", "meses_inadimplente"], 
     outputCol="features"
 )
+df_final = assembler.transform(df_ia)
 
-df_preparado = assembler.transform(df_ia)
-
-# Treinamento do Modelo (Random Forest)
+# 5. Treinamento do Modelo (Random Forest)
 rf = RandomForestClassifier(labelCol="label", featuresCol="features", numTrees=10)
-modelo = rf.fit(df_preparado)
+model = rf.fit(df_final)
 
-# Gerando as Predições e o Score de Risco
-predicoes = modelo.transform(df_preparado)
+# Geração das Predições
+predicoes = model.transform(df_final)
 
-# Criando a Camada Final para o Power BI
-# Adicionamos a probabilidade de evasão
-from pyspark.sql.functions import udf
-from pyspark.sql.types import FloatType
+# Extração do Score de Risco (Probabilidade de Evasão)
+# Converte o vetor de probabilidade em um valor numérico para o Power BI
+extrair_prob = udf(lambda v: float(v[1]), FloatType())
+resultado_final = predicoes.withColumn("score_risco", extrair_prob(col("probability")))
 
-primeiro_elemento = udf(lambda v: float(v[1]), FloatType())
-
-resultado_final = predicoes.withColumn("score_risco", primeiro_elemento(col("probability")))
-
-# Salvando a tabela física para o Power BI ler
+# 8. Persistência dos Resultados para o Power BI
 resultado_final.select(
-    "pk_matricula_curso", "fk_aluno", "notas_global", 
-    "meses_inadimplente", "prediction", "score_risco"
-).write.mode("overwrite").saveAsTable("gold_ia_previsao_evasao")
+    "pk_matricula_curso", 
+    "notas_global", 
+    "meses_inadimplente", 
+    "prediction", 
+    "score_risco"
+).write.mode("overwrite").saveAsTable(f"{CATALOGO}.{ESQUEMA}.gold_ia_previsao_evasao")
 
-print(" IA Preditiva treinada e tabela gold_ia_previsao_evasao gerada!")
-display(spark.sql("SELECT * FROM gold_ia_previsao_evasao ORDER BY score_risco DESC"))
+print(" SUCESSO! A tabela 'gold_ia_previsao_evasao' foi gerada com as predições.")
+display(spark.table(f"{CATALOGO}.{ESQUEMA}.gold_ia_previsao_evasao"))
