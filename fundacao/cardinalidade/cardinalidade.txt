@@ -72,7 +72,5 @@ ativo_equipamento (1) — (N) alocacao_ativo_local (N) — (1) espaco_fisico (N:
 parceiro_comercial (1) — (N) contrato_espaco (N) — (1) espaco_fisico (N:M) 
 empresa_terceirizada (1) — (N) colaborador_terceirizado 
 pessoa (1) — (1) colaborador_terceirizado 
-
 processo_seletivo (1) — (N) candidato 
-
 pessoa (1) — (1) candidato 
