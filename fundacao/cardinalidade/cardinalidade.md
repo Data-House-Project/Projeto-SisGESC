@@ -1,133 +1,76 @@
 CARDINALIDADE ENTRE AS TABELAS 
 
-Núcleo Base e Identidade 
-
+1. Núcleo Base e Identidade 
 pessoa (1) — (N) endereco  
-
 pessoa (1) — (N) dependente 
-
 pessoa (1) — (N) dados_bancarios 
-
 pessoa (1) — (N) formacao_academica 
-
 pessoa (1) — (1) usuario (Relação de segurança/conta única) 
-
 usuario (1) — (N) usuario_perfil (N) — (1) perfil (Tabela Associativa N:M) 
-
 pessoa (1) — (N) documento_digital 
-
 pessoa (1) — (N) veiculo_estacionamento 
-
 usuario (1) — (N) log_auditoria 
 
-Módulo Acadêmico (Secretaria) 
 
+2. Módulo Acadêmico (Secretaria) 
 pessoa (1) — (1) aluno (Especialização de identidade) 
-
 departamento (1) — (N) curso 
-
 curso (1) — (N) disciplina 
-
 curso (1) — (N) aluno 
-
 aluno (1) — (N) matricula_curso 
-
 curso (1) — (N) matricula_curso 
-
 curso (1) — (N) professor_curso (N) — (1) professor (Tabela Associativa N:M) 
-
 curso (1) — (N) coordenador 
-
 professor (1) — (1) coordenador (Um professor assume uma coordenação específica) 
-
 disciplina (1) — (N) turma 
-
 professor (1) — (N) turma 
-
 turma (1) — (N) matricula_turma (N) — (1) aluno (Tabela Associativa N:M) 
-
 matricula_turma (1) — (1) desempenho (Um registro de notas por matrícula em turma) 
-
 motivo_reprovacao (1) — (N) desempenho 
-
  
 
-Módulo de Recursos Humanos (RH) 
-
+3. Módulo de Recursos Humanos (RH) 
 pessoa (1) — (1) funcionario (Especialização de identidade) 
-
 departamento (1) — (N) cargo 
-
 cargo (1) — (N) funcionario 
-
 funcionario (1) — (1) dados_trabalhistas (Extensão de dados de contrato) 
-
 funcionario (1) — (1) professor 
-
 funcionario (1) — (N) avaliacao_desempenho 
-
 funcionario (1) — (N) ocorrencia_disciplinar 
-
 funcionario (1) — (N) substituicao_chefia 
-
 professor (1) — (N) progressao_docente 
-
 funcionario (1) — (N) registro_ponto 
-
 funcionario (1) — (N) banco_horas 
-
 funcionario (1) — (N) exame_medico 
-
 funcionario (1) — (N) afastamento 
-
 funcionario (1) — (N) controle_ferias 
-
 funcionario (1) — (N) folha_pagamento 
-
 folha_pagamento (N) — (N) item_folha (N) — (1) rubrica (Cálculos de proventos/descontos) 
-
 funcionario (1) — (N) vinculo_beneficio (N) — (1) beneficio (N:M) 
-
 funcionario (1) — (N) vinculo_sindicato (N) — (1) sindicato (N:M) 
-
 funcionario (1) — (1) entrevista_desligamento 
 
  
 
-Módulo Financeiro e Suprimentos 
-
+4. Módulo Financeiro e Suprimentos 
 matricula_curso (1) — (1) contratos_educacionais (Um contrato por matrícula ativa) 
-
 contratos_educacionais (1) — (N) mensalidade 
-
 mensalidade (1) — (1) inadimplencia (Registro de atraso vinculado à parcela) 
-
 pessoa (1) — (N) contas_receber 
-
 contas_receber (1) — (N) contas_receber_mensalidade (N) — (1) mensalidade (N:M) 
-
 contas_receber (1) — (N) pagamento_recebido 
-
 pessoa_juridica (1) — (1) fornecedor 
-
 fornecedor (1) — (N) contas_pagar 
-
 funcionario (1) — (N) contas_pagar (Reembolsos ou pagamentos diretos) 
-
 contas_pagar (1) — (N) pagamento 
 
  
 
-Módulo de Infraestrutura e Projetos 
-
+5. Módulo de Infraestrutura e Projetos 
 funcionario (1) — (N) ativo_equipamento (Equipamentos em posse do colaborador) 
-
 ativo_equipamento (1) — (N) alocacao_ativo_local (N) — (1) espaco_fisico (N:M) 
-
 parceiro_comercial (1) — (N) contrato_espaco (N) — (1) espaco_fisico (N:M) 
-
 empresa_terceirizada (1) — (N) colaborador_terceirizado 
-
 pessoa (1) — (1) colaborador_terceirizado 
 
 processo_seletivo (1) — (N) candidato 
