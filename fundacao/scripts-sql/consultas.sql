@@ -3,7 +3,7 @@ USE sisgesc_universitario;
 
 -- Ficha Completa do Aluno: Mostra o registro, o curso e o RGM
 SELECT 
-    p.nome, 
+    CONCAT(p.nome, ' ', p.sobrenome) AS nome_completo, 
     a.ra AS Registro_Academico, 
     c.nome_curso, 
     m.pk_matricula_curso AS RGM,
@@ -14,11 +14,15 @@ JOIN matricula_curso m ON a.pk_aluno = m.fk_aluno
 JOIN curso c ON m.fk_curso = c.pk_curso;
 
 
--- Relatório de Status: Lista apenas alunos com status 'ATIVO'
-SELECT p.nome, a.ra, c.nome_curso 
+-- Relatório de Status: Lista apenas alunos com status 'ATIVO' com o nome do curso
+SELECT 
+    CONCAT(p.nome, ' ', p.sobrenome) AS nome_completo, 
+    a.ra, 
+    c.nome_curso 
 FROM aluno a
 JOIN pessoa p ON a.fk_pessoa = p.pk_pessoa
 JOIN matricula_curso mc ON mc.fk_aluno = a.pk_aluno
+JOIN curso c ON mc.fk_curso = c.pk_curso
 WHERE mc.status_academico = 'ativo';
 
 
@@ -42,56 +46,63 @@ ORDER BY
     media_global_turma DESC;
 
 
--- Cruzamento Financeiro x RH x Aluno
--- Análise Financeira Positiva: Identifica Bons Pagadores (Total pago > 3000)
-SELECT p.nome, a.ra
-FROM aluno a
-JOIN pessoa p ON a.fk_pessoa = p.pk_pessoa
-WHERE a.pk_aluno IN (
-    SELECT ce.fk_matricula_curso 
-    FROM mensalidade m
-    JOIN contratos_educacionais ce ON m.fk_contrato = ce.pk_contrato
-    WHERE m.status_mensalidade = 'pago'
-    GROUP BY ce.fk_matricula_curso
-    HAVING SUM(m.valor_parcela) > 3000
-);
+-- Cruzamento Financeiro x RH x Aluno: Bons Pagadores (valor parcela > 3000)
+SELECT 
+    CONCAT(p.nome, ' ', p.sobrenome) AS nome_completo, 
+    a.ra,
+    m.status_mensalidade AS status_financeiro, 
+    SUM(m.valor_parcela) AS total_pago
+FROM pessoa p
+JOIN aluno a ON p.pk_pessoa = a.fk_pessoa
+JOIN matricula_curso mc ON a.pk_aluno = mc.fk_aluno
+JOIN contratos_educacionais ce ON mc.pk_matricula_curso = ce.fk_matricula_curso
+JOIN mensalidade m ON ce.pk_contrato = m.fk_contrato
+WHERE m.status_mensalidade = 'pago'
+GROUP BY p.pk_pessoa, a.ra, m.status_mensalidade
+HAVING SUM(m.valor_parcela) > 3000;
 
 
 -- Alunos atrasados e o valor total da dívida
 SELECT 
     a.ra,
-    p.nome AS nome_aluno,
-    p.telefone_pessoal,
-    (
-        SELECT SUM(m.valor_parcela)
-        FROM mensalidade m
-        INNER JOIN contratos_educacionais ce ON m.fk_contrato = ce.pk_contrato
-        WHERE ce.fk_matricula_curso = mc.pk_matricula_curso
-        AND m.status_mensalidade = 'atrasado'
-    ) AS total_divida_atrasada
+    CONCAT(p.nome, ' ', p.sobrenome) AS nome_aluno,
+    COALESCE(p.telefone_pessoal, p.telefone_emergencia, 'Contato não cadastrado') AS telefone_contato,
+    m.status_mensalidade,
+    SUM(m.valor_parcela) AS total_divida_atrasada
 FROM aluno a
 INNER JOIN pessoa p ON a.fk_pessoa = p.pk_pessoa
 INNER JOIN matricula_curso mc ON mc.fk_aluno = a.pk_aluno
-WHERE a.pk_aluno IN (
-    SELECT ce.fk_matricula_curso
-    FROM mensalidade m
-    INNER JOIN contratos_educacionais ce ON m.fk_contrato = ce.pk_contrato
-    WHERE m.status_mensalidade = 'atrasado'
-)
+INNER JOIN contratos_educacionais ce ON mc.pk_matricula_curso = ce.fk_matricula_curso
+INNER JOIN mensalidade m ON ce.pk_contrato = m.fk_contrato
+WHERE m.status_mensalidade = 'atrasado'
+GROUP BY 
+    a.ra, 
+    p.nome, 
+    p.sobrenome, 
+    p.telefone_pessoal, 
+    p.telefone_emergencia, 
+    mc.pk_matricula_curso, 
+    m.status_mensalidade 
 ORDER BY total_divida_atrasada DESC;
 
--- Custo Total de Folha de Pagamento por Departamento
+
+-- Custo de Folha de Pagamento por Departamento
 SELECT 
     d.nome_depto,
-    COUNT(DISTINCT f.pk_matricula_funcional) AS total_funcionarios,
-    SUM(fp.valor_liquido) AS custo_total_folha,
-    ROUND(AVG(fp.valor_liquido), 2) AS salario_medio_depto
+    fp.mes_referencia,
+    fp.ano_referencia,
+    COUNT(DISTINCT f.pk_matricula_funcional) AS total_colaboradores_ativos,
+    CONCAT('R$ ', FORMAT(SUM(fp.valor_liquido), 2, 'pt_BR')) AS custo_total_folha,
+    CONCAT('R$ ', FORMAT(AVG(fp.valor_liquido), 2, 'pt_BR')) AS media_salarial_depto
 FROM departamento d
 INNER JOIN cargo c ON c.fk_depto = d.pk_depto
 INNER JOIN funcionario f ON f.fk_cargo = c.pk_cargo
 INNER JOIN folha_pagamento fp ON fp.fk_matricula = f.pk_matricula_funcional
-WHERE f.status_atual = 'ativo'
-GROUP BY d.nome_depto;
+WHERE f.status_atual = 'ativo' 
+  AND fp.mes_referencia = 5 -- Exemplo: Maio
+  AND fp.ano_referencia = 2026 -- Exemplo: 2026
+GROUP BY d.nome_depto, fp.mes_referencia, fp.ano_referencia
+ORDER BY d.nome_depto;
 
 
 
