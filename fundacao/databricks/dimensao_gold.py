@@ -1,6 +1,8 @@
-# Dim_Aluno: Consolida dados de Aluno e Pessoa na memória
+print(" Criando Tabelas de Dimensão na Camada Gold...")
+
+# Dim_Aluno: União de dados acadêmicos e pessoais
 spark.sql("""
-CREATE OR REPLACE TEMP VIEW gold_dim_aluno AS
+CREATE OR REPLACE TABLE gold_dim_aluno AS
 SELECT 
     a.pk_aluno,
     a.ra,
@@ -12,11 +14,11 @@ SELECT
 FROM silver_aluno a
 JOIN silver_pessoa p ON a.fk_pessoa = p.pk_pessoa
 """)
-print(" View gold_dim_aluno criada com sucesso!")
+print(" Tabela gold_dim_aluno criada!")
 
-# Dim_Curso: Consolida Curso e Departamento na memória
+# Dim_Curso: União de cursos e seus departamentos
 spark.sql("""
-CREATE OR REPLACE TEMP VIEW gold_dim_curso AS
+CREATE OR REPLACE TABLE gold_dim_curso AS
 SELECT 
     c.pk_curso,
     c.nome_curso,
@@ -26,4 +28,4 @@ SELECT
 FROM silver_curso c
 JOIN silver_departamento d ON c.fk_depto = d.pk_depto
 """)
-print(" View gold_dim_curso criada com sucesso!")
+print(" Tabela gold_dim_curso criada!")
