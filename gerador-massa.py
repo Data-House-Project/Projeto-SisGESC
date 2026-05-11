@@ -129,5 +129,6 @@ def gerar_massa():
             cursor.close()
             conn.close()
 
+
 if __name__ == "__main__":
     gerar_massa()
